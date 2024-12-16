@@ -8,7 +8,7 @@ st.set_page_config(page_title="City Summit generator", page_icon=":material/elev
 
 st.title("City Summit 🏙️🗻", anchor=False)
 
-tab1, tab2 = st.tabs(["Generate", "Description"])
+tab1, tab2 = st.tabs(["Generate", "About"])
 
 container1 = tab1.container()
 container2 = tab1.container(border=True)
