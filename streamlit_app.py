@@ -19,7 +19,7 @@ with container1:
     )
 
     city_name = st.sidebar.text_input(
-        "City to geocode", help="Will be geocoded using Nominatim service")
+        "City to geocode", help="Will be geocoded using Nominatim service. Bigger cities / regions will crash the runtime!")
     color_palette = st.sidebar.text_input('Palette', value="ag_Sunset",
                                           help="For more palettes look here https://python-graph-gallery.com/color-palette-finder/")
     resolution = st.sidebar.selectbox("Resolution", options=(
