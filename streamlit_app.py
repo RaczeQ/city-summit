@@ -51,8 +51,14 @@ tab2.markdown("""
 **City Summit** 🏙️🗻 is a visualization project focused on exploring the geometries of buildings from a given city.
 """)
 with tab2.container(border=True):
-    st.caption("Example summit visualization for the city of Wrocław, Poland.")
-    st.image("images/wro_summit_transparent.png")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.write(" ")
+    with col3:
+        st.write(" ")
+    with col2:
+        st.caption("Example summit visualization for the city of Wrocław, Poland.")
+        st.image("images/wro_summit_transparent.png")
 tab2.markdown("""
 Created visualizations represent stacked layers made from existing buildings in a given city.
               
