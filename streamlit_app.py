@@ -10,7 +10,7 @@ container1 = st.container()
 container2 = st.container(border=True)
 
 with container1:
-    st.title("City Summit 🏙️🗻")
+    st.title("City Summit 🏙️🗻", anchor=False)
     st.write(
         "Generate a summit for the city of your choosing!"
     )
