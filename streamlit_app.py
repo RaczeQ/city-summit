@@ -8,6 +8,8 @@ st.write(
 )
 
 city_name = st.text_input('City')
+color_palette = st.text_input('Palette', value="ag_Sunset",
+                              help="For more palettes look here https://python-graph-gallery.com/color-palette-finder/")
 resolution = st.slider("Resolution", min_value=1,
                        max_value=10, value=1, step=1)
 rotate_buildings = st.checkbox("Rotate buildings", value=True)
