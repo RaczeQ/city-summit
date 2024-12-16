@@ -3,6 +3,9 @@ import plotly.express as px
 
 from city_summit import get_city_summit
 
+st.set_page_config(page_title="City Summit generator", page_icon=":material/elevation:", layout="centered",
+                   initial_sidebar_state="auto", menu_items=None)
+
 container1 = st.container()
 container2 = st.container(border=True)
 
@@ -21,6 +24,10 @@ with container1:
     rotate_buildings = st.sidebar.checkbox("Rotate buildings", value=True,
                                            help="Rotation will align building in similar orientation angle-wise.")
 
+    if not city_name:
+        st.caption(
+            "Set parameters in the sidebar."
+        )
 
 def render_summit():
     with container2:
