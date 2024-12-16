@@ -19,7 +19,6 @@ from shapely import affinity
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform
 from streamlit.delta_generator import DeltaGenerator
-# from streamlit_theme import st_theme
 
 
 def get_aligned_geometry(geometry: BaseGeometry, skip_rotation: bool = False, skip_projection: bool = False) -> float:
@@ -100,6 +99,8 @@ def get_aligned_buildings(
                 current_progress += step_size
                 bar.progress(value=current_progress, text="Aligning buildings")
 
+            bar.empty()
+
     return gpd.GeoDataFrame(geometry=aligned_geometries)
 
 
@@ -143,10 +144,10 @@ def generate_plotly_figure(
 def get_city_summit(st_container: DeltaGenerator, city: str, resolution: int, skip_rotation: bool, palette_name: str) -> go.Figure:
     if skip_rotation:
         loaded_geometries_path = Path(
-            f"animation/{city.lower()}/aligned.parquet")
+            f"files/buildings/{city.lower()}/aligned.parquet")
     else:
         loaded_geometries_path = Path(
-            f"animation/{city.lower()}/rotated.parquet")
+            f"files/buildings/{city.lower()}/rotated.parquet")
 
     if not loaded_geometries_path.exists():
         loaded_geometries = get_aligned_buildings(
@@ -177,12 +178,6 @@ def get_city_summit(st_container: DeltaGenerator, city: str, resolution: int, sk
             )
 
     canvas = np.flipud(canvas)
-
-    # current_theme = st_theme()
-    # background_color = np.array([0, 0, 0, 0])
-    # if current_theme:
-    #     background_color = np.array(
-    #         [0, 0, 0, 1]) if current_theme["base"] == "dark" else np.array([1, 1, 1, 1])
 
     original_cm = load_cmap(palette_name, cmap_type="continuous")
     newcolors = original_cm(np.linspace(0, 1, 256))
