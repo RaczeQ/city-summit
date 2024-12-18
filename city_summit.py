@@ -114,7 +114,7 @@ def get_buildings_heightmap(
         tempfile.TemporaryDirectory(dir=Path("cache").resolve()) as tmp_dir,
         ProcessPoolExecutor() as ex,
     ):
-        canvases = []
+        final_canvas = None
         saved_prepared_geometries = []
         total_bounds = None
 
@@ -170,17 +170,17 @@ def get_buildings_heightmap(
 
         for file_path in saved_prepared_geometries:
             gdf = gpd.read_parquet(file_path)
-            canvases.append(
-                rasterize_to_canvas(gdf["geometry"], total_bounds, resolution)
-            )
+            canvas = rasterize_to_canvas(gdf["geometry"], total_bounds, resolution)
+            if final_canvas is None:
+                final_canvas = canvas
+            else:
+                final_canvas += canvas
             current_progress += step_size
             bar.progress(
                 value=current_progress, text="Stacking (rasterizing) buildings"
             )
 
         bar.empty()
-
-        final_canvas = sum(canvases)
 
     return final_canvas
 
