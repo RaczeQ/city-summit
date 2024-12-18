@@ -25,6 +25,7 @@ from shapely.ops import transform
 from streamlit.delta_generator import DeltaGenerator
 
 BATCH_SIZE = 10_000
+SAVE_DIRECTORY = Path("files/buildings")
 
 
 def download_overturemaps_data(location: str) -> gpd.GeoDataFrame:
@@ -33,7 +34,7 @@ def download_overturemaps_data(location: str) -> gpd.GeoDataFrame:
         "building",
         geocode_to_geometry(location),
         max_workers=1,
-        result_file_path=Path(f"files/buildings/{location.lower()}/raw_data.parquet"),
+        result_file_path=SAVE_DIRECTORY / location.lower() / "raw_data.parquet",
         # columns_to_download=["id", "geometry"],
     )
     return buildings_path
@@ -41,7 +42,7 @@ def download_overturemaps_data(location: str) -> gpd.GeoDataFrame:
 
 def get_cached_available_cities() -> list[str]:
     cached_cities = []
-    for file_path in Path(f"files/buildings").glob("**/raw_data.parquet"):
+    for file_path in SAVE_DIRECTORY.glob("**/raw_data.parquet"):
         cached_cities.append(file_path.parts[-2])
 
     return cached_cities
@@ -233,14 +234,8 @@ def get_city_summit(
     skip_rotation: bool,
     palette_name: str,
 ) -> go.Figure:
-    if skip_rotation:
-        saved_canvas_path = Path(
-            f"files/buildings/{city.lower()}/aligned_{resolution}.npy"
-        )
-    else:
-        saved_canvas_path = Path(
-            f"files/buildings/{city.lower()}/rotated_{resolution}.npy"
-        )
+    canvas_file_type = "aligned" if skip_rotation else "rotated"
+    saved_canvas_path = SAVE_DIRECTORY / city.lower() / f"{canvas_file_type}_{resolution}.npy"
 
     if not saved_canvas_path.exists():
         canvas = get_buildings_heightmap(
