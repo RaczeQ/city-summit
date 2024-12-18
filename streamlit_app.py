@@ -4,8 +4,13 @@ import plotly.express as px
 
 from city_summit import get_cached_available_cities, get_city_summit
 
-st.set_page_config(page_title="City Summit generator", page_icon=":material/elevation:", layout="centered",
-                   initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(
+    page_title="City Summit generator",
+    page_icon=":material/elevation:",
+    layout="centered",
+    initial_sidebar_state="auto",
+    menu_items=None,
+)
 
 st.title("City Summit 🏙️🗻", anchor=False)
 
@@ -15,48 +20,67 @@ container1 = tab1.container()
 container2 = tab1.container(border=True)
 
 with container1:
-    st.write(
-        "Generate a summit for the city of your choosing!"
-    )
+    st.write("Generate a summit for the city of your choosing!")
 
     cached_cities = get_cached_available_cities()
 
     add_new_city_prompt = "Add new city..."
 
     new_city_name = None
-    selected_city_name = st.sidebar.selectbox("Select the city", options=[add_new_city_prompt, *sorted(
-        cached_cities)], index=random.randint(1, len(cached_cities)) if cached_cities else 0, help="Will be geocoded using Nominatim service. Bigger cities / regions will crash the runtime!")
+    selected_city_name = st.sidebar.selectbox(
+        "Select the city",
+        options=[add_new_city_prompt, *sorted(cached_cities)],
+        index=random.randint(1, len(cached_cities)) if cached_cities else 0,
+        help="Will be geocoded using Nominatim service. Bigger cities / regions will crash the runtime!",
+    )
     if selected_city_name == add_new_city_prompt:
         new_city_name = st.sidebar.text_input(
-            "New city to geocode", help="Will be geocoded using Nominatim service. Bigger cities / regions will crash the runtime!")
+            "New city to geocode",
+            help="Will be geocoded using Nominatim service. Bigger cities / regions will crash the runtime!",
+        )
 
-    selected_city_name = new_city_name if selected_city_name == add_new_city_prompt else selected_city_name
+    selected_city_name = (
+        new_city_name
+        if selected_city_name == add_new_city_prompt
+        else selected_city_name
+    )
 
-    color_palette = st.sidebar.text_input('Palette', value="ag_Sunset",
-                                          help="For more palettes look here https://python-graph-gallery.com/color-palette-finder/")
-    resolution = st.sidebar.selectbox("Resolution", options=(
-        1, 2, 3, 4, 5), help="Increasing the resolution for bigger cities might crash the execution.")
-    rotate_buildings = st.sidebar.checkbox("Rotate buildings", value=True,
-                                           help="Rotation will align building in similar orientation angle-wise.")
+    color_palette = st.sidebar.text_input(
+        "Palette",
+        value="ag_Sunset",
+        help="For more palettes look here https://python-graph-gallery.com/color-palette-finder/",
+    )
+    resolution = st.sidebar.selectbox(
+        "Resolution",
+        options=(1, 2, 3, 4, 5),
+        help="Increasing the resolution for bigger cities might crash the execution.",
+    )
+    rotate_buildings = st.sidebar.checkbox(
+        "Rotate buildings",
+        value=True,
+        help="Rotation will align building in similar orientation angle-wise.",
+    )
 
     if not selected_city_name:
-        st.caption(
-            "⬅️ Set parameters in the sidebar."
-        )
+        st.caption("⬅️ Set parameters in the sidebar.")
 
 
 def render_summit():
     with container2:
-        fig = get_city_summit(st_container=container2, city=selected_city_name, resolution=resolution,
-                              skip_rotation=not rotate_buildings, palette_name=color_palette)
-        with st.spinner('Generating 3d visualization'):
+        fig = get_city_summit(
+            st_container=container2,
+            city=selected_city_name,
+            resolution=resolution,
+            skip_rotation=not rotate_buildings,
+            palette_name=color_palette,
+        )
+        with st.spinner("Generating 3d visualization"):
             st.plotly_chart(fig, use_container_width=True)
 
 
 with container1:
     disable_button = not selected_city_name or not color_palette
-    st.sidebar.button('Generate!', on_click=render_summit,
-                      disabled=disable_button)
+    st.sidebar.button("Generate!", on_click=render_summit, disabled=disable_button)
 
 tab2.subheader("Project description", anchor=False, divider=True)
 tab2.markdown("""
@@ -69,8 +93,7 @@ with tab2.container(border=True):
     with col3:
         st.write(" ")
     with col2:
-        st.caption(
-            "Example summit visualization for the city of Wrocław, Poland.")
+        st.caption("Example summit visualization for the city of Wrocław, Poland.")
         st.image("images/wro_summit_transparent.png")
 tab2.markdown("""
 Created visualizations represent stacked layers made from existing buildings in a given city.

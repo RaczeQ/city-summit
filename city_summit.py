@@ -12,7 +12,10 @@ import pyarrow.parquet as pq
 import streamlit as st
 from affine import Affine
 from matplotlib.colors import ListedColormap
-from overturemaestro import convert_geometry_to_geodataframe, convert_geometry_to_parquet, geocode_to_geometry
+from overturemaestro import (
+    convert_geometry_to_parquet,
+    geocode_to_geometry,
+)
 from pypalettes import load_cmap
 from rasterio.features import MergeAlg, rasterize
 from rich.progress import track
@@ -30,8 +33,7 @@ def download_overturemaps_data(location: str) -> gpd.GeoDataFrame:
         "building",
         geocode_to_geometry(location),
         max_workers=1,
-        result_file_path=Path(
-            f"files/buildings/{location.lower()}/raw_data.parquet")
+        result_file_path=Path(f"files/buildings/{location.lower()}/raw_data.parquet"),
         # columns_to_download=["id", "geometry"],
     )
     return buildings_path
@@ -46,7 +48,9 @@ def get_cached_available_cities() -> list[str]:
 
 
 def translate_geometry(geometry) -> BaseGeometry:
-    return affinity.translate(geometry, xoff=-geometry.centroid.x, yoff=-geometry.centroid.y)
+    return affinity.translate(
+        geometry, xoff=-geometry.centroid.x, yoff=-geometry.centroid.y
+    )
 
 
 def rotate_geometry(geometry) -> BaseGeometry:
@@ -86,19 +90,29 @@ def rasterize_to_canvas(geometries, total_bounds, resolution) -> np.ndarray:
         fill=0,
         out_shape=(canvas_height + 4, canvas_width + 4),
         merge_alg=MergeAlg.add,
-        transform=(Affine.translation(xoff=minx - 2, yoff=miny - 2) * Affine.scale(1 / resolution)),
+        transform=(
+            Affine.translation(xoff=minx - 2, yoff=miny - 2)
+            * Affine.scale(1 / resolution)
+        ),
     )
 
     return np.flipud(canvas)
 
 
 def get_buildings_heightmap(
-    _st_container: DeltaGenerator, location: str, skip_rotation: bool = False, sample_size: Optional[int] = None
+    _st_container: DeltaGenerator,
+    location: str,
+    skip_rotation: bool = False,
+    resolution: int = 1,
 ) -> np.ndarray:
-    with _st_container:
-        with st.spinner('Downloading buildings from Overture Maps'):
-            buildings_path = download_overturemaps_data(location)
+    with _st_container, st.spinner("Downloading buildings from Overture Maps"):
+        buildings_path = download_overturemaps_data(location)
 
+    with (
+        _st_container,
+        tempfile.TemporaryDirectory(dir=Path("cache").resolve()) as tmp_dir,
+        ProcessPoolExecutor() as ex,
+    ):
         canvases = []
         saved_prepared_geometries = []
         total_bounds = None
@@ -111,56 +125,59 @@ def get_buildings_heightmap(
 
         current_progress = 0.0
         step_size = 1 / total_batches
-        bar = st.progress(value=current_progress,
-                            text="Aligning buildings")
+        bar = st.progress(value=current_progress, text="Aligning buildings")
 
-        with tempfile.TemporaryDirectory(dir=Path("cache").resolve()) as tmp_dir, ProcessPoolExecutor() as ex:
-            for idx, batch in enumerate(raw_file.iter_batches(batch_size=BATCH_SIZE)):
-                gdf = gpd.GeoDataFrame.from_arrow(batch).set_crs(4326)
-                gdf = gdf.to_crs(gdf.estimate_utm_crs())
+        for idx, batch in enumerate(raw_file.iter_batches(batch_size=BATCH_SIZE)):
+            gdf = gpd.GeoDataFrame.from_arrow(batch).set_crs(4326)
+            gdf = gdf.to_crs(gdf.estimate_utm_crs())
 
+            gdf["geometry"] = gpd.GeoSeries(
+                ex.map(translate_geometry, gdf["geometry"], chunksize=100)
+            )
+            if rotate:
                 gdf["geometry"] = gpd.GeoSeries(
-                    ex.map(translate_geometry, gdf["geometry"], chunksize=100)
+                    ex.map(rotate_geometry, gdf["geometry"], chunksize=100)
                 )
-                if rotate:
-                    gdf["geometry"] = gpd.GeoSeries(
-                        ex.map(rotate_geometry, gdf["geometry"], chunksize=100)
-                    )
 
-                saved_prepared_geometries.append(Path(tmp_dir) / f"{idx}.parquet")
-                gdf.to_parquet(saved_prepared_geometries[-1])
+            saved_prepared_geometries.append(Path(tmp_dir) / f"{idx}.parquet")
+            gdf.to_parquet(saved_prepared_geometries[-1])
 
-                current_progress += step_size
-                bar.progress(value=current_progress, text="Aligning buildings")
+            current_progress += step_size
+            bar.progress(value=current_progress, text="Aligning buildings")
 
-                batch_total_bounds = gdf["geometry"].total_bounds
+            batch_total_bounds = gdf["geometry"].total_bounds
 
-                if total_bounds is None:
-                    total_bounds = batch_total_bounds
-                    continue
+            if total_bounds is None:
+                total_bounds = batch_total_bounds
+                continue
 
-                if batch_total_bounds[0] < total_bounds[0]:
-                    total_bounds[0] = batch_total_bounds[0]
-                if batch_total_bounds[1] < total_bounds[1]:
-                    total_bounds[1] = batch_total_bounds[1]
-                if batch_total_bounds[2] > total_bounds[2]:
-                    total_bounds[2] = batch_total_bounds[2]
-                if batch_total_bounds[3] > total_bounds[3]:
-                    total_bounds[3] = batch_total_bounds[3]
+            if batch_total_bounds[0] < total_bounds[0]:
+                total_bounds[0] = batch_total_bounds[0]
+            if batch_total_bounds[1] < total_bounds[1]:
+                total_bounds[1] = batch_total_bounds[1]
+            if batch_total_bounds[2] > total_bounds[2]:
+                total_bounds[2] = batch_total_bounds[2]
+            if batch_total_bounds[3] > total_bounds[3]:
+                total_bounds[3] = batch_total_bounds[3]
 
-            bar.empty()
+        bar.empty()
 
-            current_progress = 0.0
-            bar = st.progress(value=current_progress,
-                            text="Stacking (rasterizing) buildings")
+        current_progress = 0.0
+        bar = st.progress(
+            value=current_progress, text="Stacking (rasterizing) buildings"
+        )
 
-            for file_path in saved_prepared_geometries:
-                gdf = gpd.read_parquet(file_path)
-                canvases.append(rasterize_to_canvas(gdf["geometry"], total_bounds, 1))
-                current_progress += step_size
-                bar.progress(value=current_progress, text="Stacking (rasterizing) buildings")
-            
-            bar.empty()
+        for file_path in saved_prepared_geometries:
+            gdf = gpd.read_parquet(file_path)
+            canvases.append(
+                rasterize_to_canvas(gdf["geometry"], total_bounds, resolution)
+            )
+            current_progress += step_size
+            bar.progress(
+                value=current_progress, text="Stacking (rasterizing) buildings"
+            )
+
+        bar.empty()
 
         final_canvas = sum(canvases)
 
@@ -182,7 +199,7 @@ def generate_plotly_figure(
 
     y_ratio = canvas.shape[0] / canvas.shape[1]
 
-    with np.errstate(divide='ignore'):
+    with np.errstate(divide="ignore"):
         z = np.log(canvas)
         z[np.isneginf(z)] = -1
 
@@ -199,24 +216,39 @@ def generate_plotly_figure(
         autosize=True,
         scene_camera_eye=dict(x=x_eye, y=y_eye, z=z_eye),
         margin=dict(l=5, r=5, b=5, t=5),
-        scene=dict(xaxis=dict(visible=False), yaxis=dict(
-            visible=False), zaxis=dict(visible=False, range=[-0.99, None])),
+        scene=dict(
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            zaxis=dict(visible=False, range=[-0.99, None]),
+        ),
     )
 
     return fig
 
 
-def get_city_summit(st_container: DeltaGenerator, city: str, resolution: int, skip_rotation: bool, palette_name: str) -> go.Figure:
+def get_city_summit(
+    st_container: DeltaGenerator,
+    city: str,
+    resolution: int,
+    skip_rotation: bool,
+    palette_name: str,
+) -> go.Figure:
     if skip_rotation:
         saved_canvas_path = Path(
-            f"files/buildings/{city.lower()}/aligned.npy")
+            f"files/buildings/{city.lower()}/aligned_{resolution}.npy"
+        )
     else:
         saved_canvas_path = Path(
-            f"files/buildings/{city.lower()}/rotated.npy")
-        
+            f"files/buildings/{city.lower()}/rotated_{resolution}.npy"
+        )
+
     if not saved_canvas_path.exists():
-        canvas = get_buildings_heightmap(_st_container=st_container,
-            location=city.lower(), skip_rotation=skip_rotation)
+        canvas = get_buildings_heightmap(
+            _st_container=st_container,
+            location=city.lower(),
+            skip_rotation=skip_rotation,
+            resolution=resolution,
+        )
         np.save(saved_canvas_path, canvas)
     else:
         canvas = np.load(saved_canvas_path)
@@ -226,6 +258,5 @@ def get_city_summit(st_container: DeltaGenerator, city: str, resolution: int, sk
     newcolors[:1, :] = np.array([0, 0, 0, 1])
     newcmp = ListedColormap(newcolors)
 
-    with st_container:
-        with st.spinner('Generating 3d visualization'):
-            return generate_plotly_figure(city, canvas, newcmp)
+    with st_container, st.spinner("Generating 3d visualization"):
+        return generate_plotly_figure(city, canvas, newcmp)
