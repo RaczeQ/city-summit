@@ -47,7 +47,7 @@ with container1:
 
 def render_summit():
     with container2:
-        fig = get_city_summit(st_container=container2, city=selected_city_name.lower(), resolution=resolution,
+        fig = get_city_summit(st_container=container2, city=selected_city_name, resolution=resolution,
                               skip_rotation=not rotate_buildings, palette_name=color_palette)
         with st.spinner('Generating 3d visualization'):
             st.plotly_chart(fig, use_container_width=True)
