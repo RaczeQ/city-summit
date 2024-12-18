@@ -75,7 +75,7 @@ with tab2.container(border=True):
 tab2.markdown("""
 Created visualizations represent stacked layers made from existing buildings in a given city.
               
-The name of the project refers to the shape of the gable, which is created by layering the buildings on top of each other in this way.
+The name of the project refers to the shape of the mountain, which is created by layering the buildings on top of each other in this way.
 """)
 tab2.subheader("How does it work?", divider=True, anchor=False)
 tab2.markdown("""
