@@ -1,5 +1,6 @@
 streamlit
 plotly==5.24.1
+orjson
 geopandas==1.0.1
 shapely==2.0.6
 numpy
@@ -7,3 +8,5 @@ rasterio==1.4.0
 overturemaestro==0.1.2
 matplotlib==3.9.2
 pypalettes==0.1.3
+streamlit-folium
+mapclassify

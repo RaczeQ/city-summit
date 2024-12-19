@@ -18,14 +18,30 @@ from overturemaestro import (
 )
 from pypalettes import load_cmap
 from rasterio.features import MergeAlg, rasterize
-from rich.progress import track
+import pyproj as proj
 from shapely import affinity
-from shapely.geometry.base import BaseGeometry
+from shapely.geometry.base import BaseGeometry, BaseMultipartGeometry
 from shapely.ops import transform
 from streamlit.delta_generator import DeltaGenerator
 
 BATCH_SIZE = 10_000
 SAVE_DIRECTORY = Path("files/buildings")
+
+
+def calculate_area(geometry: BaseGeometry) -> float:
+    if isinstance(geometry, BaseMultipartGeometry):
+        return sum(calculate_area(g) for g in geometry.geoms)
+
+    centroid = geometry.centroid
+    crs_wgs = proj.Proj("epsg:4326")
+    cust = proj.Proj(
+        f"+proj=laea +lat_0={centroid.y} +lon_0={centroid.x} +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=km +no_defs"
+    )
+    project = proj.Transformer.from_proj(crs_wgs, cust, always_xy=True).transform
+
+    geom_proj = transform(project, geometry)
+
+    return geom_proj.area
 
 
 def download_overturemaps_data(location: str) -> gpd.GeoDataFrame:
@@ -233,9 +249,12 @@ def get_city_summit(
     resolution: int,
     skip_rotation: bool,
     palette_name: str,
+    reverse_palette: bool,
 ) -> go.Figure:
     canvas_file_type = "aligned" if skip_rotation else "rotated"
-    saved_canvas_path = SAVE_DIRECTORY / city.lower() / f"{canvas_file_type}_{resolution}.npy"
+    saved_canvas_path = (
+        SAVE_DIRECTORY / city.lower() / f"{canvas_file_type}_{resolution}.npy"
+    )
 
     if not saved_canvas_path.exists():
         canvas = get_buildings_heightmap(
@@ -248,7 +267,9 @@ def get_city_summit(
     else:
         canvas = np.load(saved_canvas_path)
 
-    original_cm = load_cmap(palette_name, cmap_type="continuous")
+    original_cm = load_cmap(
+        palette_name, cmap_type="continuous", reverse=reverse_palette
+    )
     newcolors = original_cm(np.linspace(0, 1, 256))
     newcolors[:1, :] = np.array([0, 0, 0, 1])
     newcmp = ListedColormap(newcolors)
