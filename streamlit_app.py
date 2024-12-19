@@ -92,7 +92,9 @@ with container1:
     if selected_city_name:
         try:
             geocoded_geometry = geocode_to_geometry(selected_city_name)
-            folium_map = gpd.GeoSeries([geocoded_geometry], crs=4326).explore()
+            folium_map = gpd.GeoSeries([geocoded_geometry], crs=4326).explore(
+                tiles="CartoDB Voyager"
+            )
             with st.sidebar:
                 st_folium(
                     folium_map,
