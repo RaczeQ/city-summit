@@ -52,6 +52,7 @@ def download_overturemaps_data(location: str) -> gpd.GeoDataFrame:
         max_workers=1,
         result_file_path=SAVE_DIRECTORY / location.lower() / "raw_data.parquet",
         # columns_to_download=["id", "geometry"],
+        verbosity_mode="silent", 
     )
     return buildings_path
 
