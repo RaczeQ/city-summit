@@ -51,6 +51,7 @@ tab1, tab2 = st.tabs(["Generate", "About"])
 
 container1 = tab1.container()
 container2 = tab1.container(border=True)
+container3 = tab1.container()
 
 disable_button = False
 
@@ -144,17 +145,38 @@ with container1:
 
 def render_summit():
     set_executed()
+    fig, saved_heightmap_file = get_city_summit(
+        st_container=container2,
+        city=selected_city_name,
+        resolution=resolution,
+        skip_rotation=not rotate_buildings,
+        palette_name=color_palette,
+        reverse_palette=reverse_palette,
+    )
+
     with container2:
-        fig = get_city_summit(
-            st_container=container2,
-            city=selected_city_name,
-            resolution=resolution,
-            skip_rotation=not rotate_buildings,
-            palette_name=color_palette,
-            reverse_palette=reverse_palette,
-        )
-        with st.spinner("Generating 3d visualization"):
-            st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
+
+    result_file_name = (
+        f"{selected_city_name.lower().replace(' ', '-')}_{resolution}.npy"
+    )
+
+    @st.fragment
+    def show_download_button():
+        with open(saved_heightmap_file, "rb") as file:
+            st.download_button(
+                label="Download generated heightmap",
+                data=file,
+                file_name=result_file_name,
+                mime="application/octet-stream",
+            )
+
+    with container3, st.expander("Download the heightmap"):
+        show_download_button()
+        code = f"""# Load the downloaded data
+import numpy as np
+heightmap = np.load("{result_file_name}")"""
+        st.code(code, language="python")
 
 
 with container1:

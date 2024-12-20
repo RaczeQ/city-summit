@@ -267,7 +267,7 @@ def get_city_summit(
     skip_rotation: bool,
     palette_name: str,
     reverse_palette: bool,
-) -> go.Figure:
+) -> tuple[go.Figure, Path]:
     canvas_file_type = "aligned" if skip_rotation else "rotated"
     saved_canvas_path = (
         SAVE_DIRECTORY / city.lower() / f"{canvas_file_type}_{resolution}.npy"
@@ -293,4 +293,4 @@ def get_city_summit(
 
     with st_container, st.spinner("Generating 3d visualization"):
         total_no_buildings = get_total_no_buildings(city.lower())
-        return generate_plotly_figure(f"{city} ({total_no_buildings} buildings)", canvas, newcmp)
+        return generate_plotly_figure(f"{city} ({total_no_buildings} buildings)", canvas, newcmp), saved_canvas_path
