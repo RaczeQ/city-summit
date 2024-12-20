@@ -129,7 +129,7 @@ def get_buildings_heightmap(
     with _st_container, st.spinner("Downloading buildings from Overture Maps"):
         buildings_path = download_overturemaps_data(location)
 
-    with _st_container, ProcessPoolExecutor() as ex:
+    with _st_container:
         final_canvas = None
         saved_prepared_geometries = []
         total_bounds = None
@@ -158,9 +158,7 @@ def get_buildings_heightmap(
                 gdf = gpd.GeoDataFrame.from_arrow(batch).set_crs(4326)
                 gdf = gdf.to_crs(gdf.estimate_utm_crs())
 
-                gdf["geometry"] = gpd.GeoSeries(
-                    ex.map(translate_geometry, gdf["geometry"], chunksize=100)
-                )
+                gdf["geometry"] = gdf["geometry"].apply(translate_geometry)
                 saved_aligned_buildings_path.parent.mkdir(exist_ok=True, parents=True)
                 gdf.to_parquet(saved_aligned_buildings_path)
 
@@ -168,9 +166,7 @@ def get_buildings_heightmap(
                 if saved_rotated_buildings_path.exists():
                     gdf = gpd.read_parquet(saved_rotated_buildings_path)
                 else:
-                    gdf["geometry"] = gpd.GeoSeries(
-                        ex.map(rotate_geometry, gdf["geometry"], chunksize=100)
-                    )
+                    gdf["geometry"] = gdf["geometry"].apply(rotate_geometry)
                     saved_rotated_buildings_path.parent.mkdir(
                         exist_ok=True, parents=True
                     )
