@@ -141,7 +141,7 @@ def get_buildings_heightmap(
         total_batches = np.ceil(total_rows / BATCH_SIZE)
 
         current_progress = 0.0
-        step_size = 1 / total_batches
+        step_size = 1 / (total_batches - 1)
         bar = st.progress(value=current_progress, text="Aligning buildings")
 
         for idx, batch in enumerate(raw_file.iter_batches(batch_size=BATCH_SIZE)):
