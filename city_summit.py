@@ -125,11 +125,7 @@ def get_buildings_heightmap(
     with _st_container, st.spinner("Downloading buildings from Overture Maps"):
         buildings_path = download_overturemaps_data(location)
 
-    with (
-        _st_container,
-        tempfile.TemporaryDirectory(dir=Path("cache").resolve()) as tmp_dir,
-        ProcessPoolExecutor() as ex,
-    ):
+    with _st_container, ProcessPoolExecutor() as ex:
         final_canvas = None
         saved_prepared_geometries = []
         total_bounds = None
@@ -145,19 +141,40 @@ def get_buildings_heightmap(
         bar = st.progress(value=current_progress, text="Aligning buildings")
 
         for idx, batch in enumerate(raw_file.iter_batches(batch_size=BATCH_SIZE)):
-            gdf = gpd.GeoDataFrame.from_arrow(batch).set_crs(4326)
-            gdf = gdf.to_crs(gdf.estimate_utm_crs())
-
-            gdf["geometry"] = gpd.GeoSeries(
-                ex.map(translate_geometry, gdf["geometry"], chunksize=100)
+            saved_aligned_buildings_path = (
+                SAVE_DIRECTORY / location.lower() / "aligned" / f"{idx}.parquet"
             )
-            if rotate:
-                gdf["geometry"] = gpd.GeoSeries(
-                    ex.map(rotate_geometry, gdf["geometry"], chunksize=100)
-                )
+            saved_rotated_buildings_path = (
+                SAVE_DIRECTORY / location.lower() / "rotated" / f"{idx}.parquet"
+            )
 
-            saved_prepared_geometries.append(Path(tmp_dir) / f"{idx}.parquet")
-            gdf.to_parquet(saved_prepared_geometries[-1])
+            if saved_aligned_buildings_path.exists():
+                gdf = gpd.read_parquet(saved_aligned_buildings_path)
+            else:
+                gdf = gpd.GeoDataFrame.from_arrow(batch).set_crs(4326)
+                gdf = gdf.to_crs(gdf.estimate_utm_crs())
+
+                gdf["geometry"] = gpd.GeoSeries(
+                    ex.map(translate_geometry, gdf["geometry"], chunksize=100)
+                )
+                saved_aligned_buildings_path.parent.mkdir(exist_ok=True, parents=True)
+                gdf.to_parquet(saved_aligned_buildings_path)
+
+            if rotate:
+                if saved_rotated_buildings_path.exists():
+                    gdf = gpd.read_parquet(saved_rotated_buildings_path)
+                else:
+                    gdf["geometry"] = gpd.GeoSeries(
+                        ex.map(rotate_geometry, gdf["geometry"], chunksize=100)
+                    )
+                    saved_rotated_buildings_path.parent.mkdir(
+                        exist_ok=True, parents=True
+                    )
+                    gdf.to_parquet(saved_rotated_buildings_path)
+
+                saved_prepared_geometries.append(saved_rotated_buildings_path)
+            else:
+                saved_prepared_geometries.append(saved_aligned_buildings_path)
 
             current_progress += step_size
             bar.progress(value=current_progress, text="Aligning buildings")
