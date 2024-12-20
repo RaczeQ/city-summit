@@ -177,7 +177,7 @@ def get_buildings_heightmap(
                 saved_prepared_geometries.append(saved_aligned_buildings_path)
 
             current_progress += step_size
-            bar.progress(value=current_progress, text="Aligning buildings")
+            bar.progress(value=min(1.0, current_progress), text="Aligning buildings")
 
             batch_total_bounds = gdf["geometry"].total_bounds
 
@@ -210,7 +210,7 @@ def get_buildings_heightmap(
                 final_canvas += canvas
             current_progress += step_size
             bar.progress(
-                value=current_progress, text="Stacking (rasterizing) buildings"
+                value=min(1.0, current_progress), text="Stacking (rasterizing) buildings"
             )
 
         bar.empty()
