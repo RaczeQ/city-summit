@@ -69,13 +69,13 @@ with container1:
             if "city_select_option" in st.session_state
             else (random.randint(1, len(cached_cities)) if cached_cities else 0)
         ),
-        help="Will be geocoded using Nominatim service. Bigger cities / regions will crash the runtime!",
+        help="Will be geocoded using Nominatim service. Bigger cities / regions will not be allowed.",
         key="city_select_option",
     )
     if selected_city_name == add_new_city_prompt:
         new_city_name = st.sidebar.text_input(
             "New city to geocode",
-            help="Will be geocoded using Nominatim service. Bigger cities / regions will crash the runtime!",
+            help="Will be geocoded using Nominatim service. Bigger cities / regions will not be allowed.",
         )
 
     selected_city_name = (
