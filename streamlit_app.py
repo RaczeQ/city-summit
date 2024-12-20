@@ -141,12 +141,14 @@ with container1:
 
     if not is_executed():
         st.caption("⬅️ Set parameters in the sidebar.")
-    else:
-        st.caption("🐌 Too slow? You can run [this notebook](https://github.com/RaczeQ/city-summit/blob/main/code.ipynb) locally!")
+        
 
 
 def render_summit():
     set_executed()
+    with container1:
+        st.caption("🐌 Too slow? You can run [this notebook](https://github.com/RaczeQ/city-summit/blob/main/code.ipynb) locally!")
+
     fig, saved_heightmap_file = get_city_summit(
         st_container=container2,
         city=selected_city_name,
