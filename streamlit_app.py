@@ -141,6 +141,8 @@ with container1:
 
     if not is_executed():
         st.caption("⬅️ Set parameters in the sidebar.")
+    else:
+        st.caption("🐌 Too slow? You can run [this notebook](https://github.com/RaczeQ/city-summit/blob/main/code.ipynb) locally!")
 
 
 def render_summit():
@@ -157,25 +159,34 @@ def render_summit():
     with container2:
         st.plotly_chart(fig, use_container_width=True)
 
-    result_file_name = (
-        f"{selected_city_name.lower().replace(' ', '-')}_{resolution}.npy"
-    )
+    city_stripped = selected_city_name.lower().replace(" ", "-")
+    canvas_file_type = "rotated" if rotate_buildings else "aligned"
+    result_file_name = f"{city_stripped}_{canvas_file_type}_{resolution}.npy"
 
     @st.fragment
     def show_download_button():
         with open(saved_heightmap_file, "rb") as file:
             st.download_button(
-                label="Download generated heightmap",
+                label=result_file_name,
                 data=file,
                 file_name=result_file_name,
                 mime="application/octet-stream",
+                icon=":material/download:",
             )
 
     with container3, st.expander("Download the heightmap"):
         show_download_button()
-        code = f"""# Load the downloaded data
-import numpy as np
-heightmap = np.load("{result_file_name}")"""
+        st.caption("How to load the data:")
+        code = f"""import numpy as np
+
+heightmap = np.load("{result_file_name}")
+# Plotted values are logarithmized
+# to account for huge differences in values
+with np.errstate(divide="ignore"):
+    heightmap = np.log(heightmap)
+    # setting up background values to -1
+    heightmap[np.isneginf(heightmap)] = -1
+"""
         st.code(code, language="python")
 
 
@@ -201,7 +212,8 @@ Created visualizations represent stacked layers made from existing buildings in 
 The name of the project refers to the shape of the mountain, which is created by layering the buildings on top of each other in this way.
 """)
 tab2.subheader("How does it work?", divider=True, anchor=False)
-tab2.markdown("""
+tab2.info('You can run this code locally: https://github.com/RaczeQ/city-summit/blob/main/code.ipynb', icon="🚀")
+tab2.markdown(""" 
 To generate the visualization, app downloads buildings for a given city from the [Overture Maps](https://overturemaps.org/) dataset.
 
 After downloading the buildings, all geometries are projected to the Universal Transverse Mercator (UTM) Coordinate Reference System and their vertices are translated, so that the centroid of a building is at a point (0,0).
