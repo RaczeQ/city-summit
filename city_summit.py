@@ -116,13 +116,16 @@ def rasterize_to_canvas(geometries, total_bounds, resolution) -> np.ndarray:
 
     return np.flipud(canvas)
 
+def get_total_no_buildings(location: str) -> int:
+    buildings_path = download_overturemaps_data(location)
+    return pq.ParquetFile(buildings_path).metadata.num_rows
 
 def get_buildings_heightmap(
     _st_container: DeltaGenerator,
     location: str,
     skip_rotation: bool = False,
     resolution: int = 1,
-) -> np.ndarray:
+) -> tuple[np.ndarray, int]:
     with _st_container, st.spinner("Downloading buildings from Overture Maps"):
         buildings_path = download_overturemaps_data(location)
 
@@ -293,4 +296,5 @@ def get_city_summit(
     newcmp = ListedColormap(newcolors)
 
     with st_container, st.spinner("Generating 3d visualization"):
-        return generate_plotly_figure(city, canvas, newcmp)
+        total_no_buildings = get_total_no_buildings(city.lower())
+        return generate_plotly_figure(f"{city} ({total_no_buildings} buildings)", canvas, newcmp)
