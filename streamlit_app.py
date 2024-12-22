@@ -141,13 +141,14 @@ with container1:
 
     if not is_executed():
         st.caption("⬅️ Set parameters in the sidebar.")
-        
 
 
 def render_summit():
     set_executed()
     with container1:
-        st.caption("🐌 Too slow? You can run [this notebook](https://github.com/RaczeQ/city-summit/blob/main/code.ipynb) locally!")
+        st.caption(
+            "🐌 Too slow? You can run [this notebook](https://github.com/RaczeQ/city-summit/blob/main/code.ipynb) locally!"
+        )
 
     fig, saved_heightmap_file = get_city_summit(
         st_container=container2,
@@ -214,7 +215,11 @@ Created visualizations represent stacked layers made from existing buildings in 
 The name of the project refers to the shape of the mountain, which is created by layering the buildings on top of each other in this way.
 """)
 tab2.subheader("How does it work?", divider=True, anchor=False)
-tab2.info('You can run this code locally: https://github.com/RaczeQ/city-summit/blob/main/code.ipynb', icon="🚀")
+tab2.info("In depth blogpost: https://kamilraczycki.com/blog/City-Summit", icon="📖")
+tab2.warning(
+    "You can run this code locally: https://github.com/RaczeQ/city-summit/blob/main/code.ipynb",
+    icon="🚀",
+)
 tab2.markdown(""" 
 To generate the visualization, app downloads buildings for a given city from the [Overture Maps](https://overturemaps.org/) dataset.
 
