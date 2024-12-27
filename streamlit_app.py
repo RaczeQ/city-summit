@@ -1,3 +1,4 @@
+from pathlib import Path
 import random
 from typing import Optional
 
@@ -47,7 +48,7 @@ def set_executed():
 
 st.title("City Summit 🏙️🗻", anchor=False)
 
-tab1, tab2 = st.tabs(["Generate", "About"])
+tab1, tab2, tab3 = st.tabs(["Generate", "About", "Gallery"])
 
 container1 = tab1.container()
 container2 = tab1.container(border=True)
@@ -250,3 +251,7 @@ tab2.markdown("""
               
 You can see my other projects here: https://kamilraczycki.com/projects/
 """)
+
+for image_file_path in sorted(Path("images/gallery").glob("*.png")):
+    with st.container(border=True):
+        st.image(image_file_path)
