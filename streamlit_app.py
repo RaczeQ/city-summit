@@ -253,5 +253,5 @@ You can see my other projects here: https://kamilraczycki.com/projects/
 """)
 
 for image_file_path in sorted(Path("images/gallery").glob("*.png")):
-    with st.container(border=True):
+    with tab3.container(border=True):
         st.image(image_file_path)
