@@ -6,7 +6,7 @@ import geopandas as gpd
 import plotly.express as px
 import streamlit as st
 from overturemaestro import geocode_to_geometry
-from overturemaestro._exceptions import QueryNotGeocodedError
+from rq_geo_toolkit._exceptions import QueryNotGeocodedError
 from streamlit_folium import st_folium
 
 from city_summit import calculate_area, get_cached_available_cities, get_city_summit
